@@ -1,0 +1,73 @@
+{
+	"easycom": {
+		"autoscan": true,
+		"custom": {
+			// uni-ui 规则如下配置
+			"^uni-(.*)": "@dcloudio/uni-ui/lib/uni-$1/uni-$1.vue"
+		}
+	},
+	"pages": [ //pages数组中第一项表示应用启动页，参考：https://uniapp.dcloud.io/collocation/pages
+		{
+			"path": "pages/index/index",
+			"style": {
+				"navigationBarTitleText": "首页",
+				"backgroundColor": "#FEF9EC",
+				"navigationStyle": "custom"
+			}
+		},
+		{
+			"path": "pages/my/index",
+			"style": {
+				"navigationBarTitleText": "我的",
+				"backgroundColor": "#FEF9EC",
+				"navigationStyle": "custom"
+			}
+		},
+		{
+			"path": "pages/goods/index",
+			"style": {
+				"navigationBarTitleText": "商品入库",
+				"backgroundColor": "#FEF9EC"
+			}
+		},
+		{
+			"path": "pages/store/index",
+			"style": {
+				"navigationBarTitleText": "仓库管理",
+				"backgroundColor": "#FEF9EC"
+			}
+		},
+		{
+			"path": "pages/goodsList/index",
+			"style": {
+				"navigationBarTitleText": "库存",
+				"backgroundColor": "#FEF9EC"
+			}
+		},
+	],
+	"globalStyle": {
+		"navigationBarTextStyle": "black",
+		"navigationBarTitleText": "货栈日记",
+		"navigationBarBackgroundColor": "#FEF9EC",
+		"backgroundColor": "#FEF9EC"
+	},
+	"tabBar": {
+		"list": [
+			{
+				"pagePath": "pages/index/index",
+				"text": "看板",
+				"iconPath": "static/tabs/shouye.png",
+				"selectedIconPath": "static/tabs/shouye-active.png"
+			},
+			{
+				"pagePath": "pages/my/index",
+				"text": "我的",
+				"iconPath": "static/tabs/wode.png",
+				"selectedIconPath": "static/tabs/wode-active.png"
+			}
+		],
+		"color": "#9B9B9B",
+		"selectedColor": "#2D2D2D",
+		"backgroundColor": "#FEF9EC"
+	}
+}
