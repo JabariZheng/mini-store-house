@@ -1,7 +1,7 @@
 <!--
  * @Author: ZhengJie
  * @Date: 2024-11-29 20:28:52
- * @LastEditTime: 2025-02-24 02:50:05
+ * @LastEditTime: 2025-02-24 21:47:52
  * @Description: 首页
 -->
 <template>
@@ -22,7 +22,7 @@
       </template>
     </uni-nav-bar>
     <div class="container">
-      <div class="overview">
+      <!-- <div class="overview">
         <div
           v-for="(item, value, index) in overviewData"
           :key="index"
@@ -32,7 +32,7 @@
           <div class="overview-item-value">{{ item.value }}</div>
           <div class="overview-item-label">{{ item.label }}</div>
         </div>
-      </div>
+      </div> -->
       <div class="tools-grid">
         <div
           v-for="(item, index) in tools"
@@ -270,6 +270,7 @@ page {
       display: flex;
       align-items: center;
       justify-content: center;
+      margin-bottom: 20px;
       .overview-item {
         display: flex;
         flex-flow: column;
@@ -295,7 +296,6 @@ page {
       display: grid;
       grid-template-columns: repeat(4, 1fr);
       gap: 10px;
-      margin-top: 40px;
 
       .tools-grid-item {
         display: flex;

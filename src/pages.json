@@ -44,6 +44,20 @@
 				"backgroundColor": "#FEF9EC"
 			}
 		},
+		{
+			"path": "pages/groups/index",
+			"style": {
+				"navigationBarTitleText": "分组管理",
+				"backgroundColor": "#FEF9EC"
+			}
+		},
+		{
+			"path": "pages/groupsDetail/index",
+			"style": {
+				"navigationBarTitleText": "分组详情",
+				"backgroundColor": "#FEF9EC"
+			}
+		},
 	],
 	"globalStyle": {
 		"navigationBarTextStyle": "black",

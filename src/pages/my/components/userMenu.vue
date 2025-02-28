@@ -1,7 +1,7 @@
 <!--
  * @Author: ZhengJie
  * @Date: 2025-02-19 03:11:08
- * @LastEditTime: 2025-02-24 02:23:11
+ * @LastEditTime: 2025-02-28 16:24:35
  * @Description: 用户菜单
 -->
 <template>
@@ -40,6 +40,7 @@ const menuList = ref([
     title: "分组管理",
     icon: Icon_Zuhu,
     bgColor: "#309397",
+    link: "/pages/groups/index",
   },
   {
     title: "登出",
