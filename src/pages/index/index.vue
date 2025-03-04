@@ -1,7 +1,7 @@
 <!--
  * @Author: ZhengJie
  * @Date: 2024-11-29 20:28:52
- * @LastEditTime: 2025-02-24 21:47:52
+ * @LastEditTime: 2025-03-05 03:20:59
  * @Description: 首页
 -->
 <template>
@@ -68,12 +68,11 @@
             v-for="(item, index) in storeList"
             :key="index"
             class="store-item"
-            :class="{ active: currentStoreId === item.id }"
-            @click="onStoreClick(item.id)"
+            :class="{ active: currentStore?.id === item.id }"
+            @click="onStoreClick(item)"
           >
-            <div class="store-item-name">{{ item.name }}</div>
-            <div class="store-item-desc">总量：</div>
-            <div class="store-item-desc">创建时间：</div>
+            <div class="store-item-name">{{ item.warehouseName }}</div>
+            <div class="store-item-desc">创建时间：{{ item.createDate }}</div>
           </div>
         </scroll-view>
       </div>
@@ -82,43 +81,28 @@
 </template>
 
 <script lang="ts" setup>
-import { onLoad } from "@dcloudio/uni-app"
-import { reactive, ref } from "vue"
+import { onLoad, onShow } from "@dcloudio/uni-app"
+import { computed, reactive, ref } from "vue"
 import IconChuku from "@/static/chuku.png"
 import IconRuku from "@/static/ruku.png"
+import IconPandian from "@/static/pandian.png"
+import { getCmsWarehouseList } from "@/api/modules/warehouse"
+import type { IWarehouseItem } from "@/types/warehouse"
+import { checkIsLogin } from "@/utils"
+import {
+  getCmsGoodsList,
+  getCmsGoodInfo,
+  updateCmsGoodsStore,
+} from "@/api/modules/goods"
+import type { IGoodsListItem } from "@/types/goods"
 
 const DrawerRef = ref<any>({})
 
 let safeAreaTop = ref("0px")
-let navbarTitle = ref("仓库1")
-let storeId = ref("1234")
 
-let storeList = ref([
-  { name: "仓库1", id: "1" },
-  { name: "仓库2", id: "11" },
-  { name: "仓库3", id: "12" },
-  { name: "仓库4", id: "13" },
-  { name: "仓库5", id: "14" },
-  { name: "仓库6", id: "15" },
-  { name: "仓库7", id: "16" },
-  { name: "仓库8", id: "17" },
-  { name: "仓库9", id: "18" },
-  { name: "仓库1", id: "19" },
-  { name: "仓库2", id: "10" },
-  { name: "仓库1", id: "21" },
-  { name: "仓库2", id: "211" },
-  { name: "仓库3", id: "212" },
-  { name: "仓库4", id: "213" },
-  { name: "仓库5", id: "214" },
-  { name: "仓库6", id: "215" },
-  { name: "仓库7", id: "216" },
-  { name: "仓库8", id: "217" },
-  { name: "仓库9", id: "218" },
-  { name: "仓库1", id: "219" },
-  { name: "仓库2", id: "210" },
-])
+let storeList = ref<IWarehouseItem[] | any[]>([])
 
-let currentStoreId = ref("1")
+let currentStore = ref<IWarehouseItem | any>({})
 
 let overviewData = reactive({
   todayEnter: {
@@ -147,38 +131,112 @@ const tools = ref([
   { icon: IconRuku, label: "入库", commond: "in", bgColor: "#6488E4" },
   { icon: IconChuku, label: "出库", commond: "out", bgColor: "#F9BE7C" },
   { icon: IconRuku, label: "库存", commond: "list", bgColor: "#309397" },
+  // {
+  //   icon: IconPandian,
+  //   label: "盘点",
+  //   commond: "stocktaking",
+  //   bgColor: "#ACBFE0",
+  // },
 ])
 
+const navbarTitle = computed(() => {
+  return currentStore.value?.warehouseName || ""
+})
+
 onLoad(async () => {
-  console.log("onLoad")
   const windowInfo = uni.getWindowInfo()
   if (windowInfo.safeArea?.top) {
     safeAreaTop.value = windowInfo.safeArea.top + "px"
   }
-  console.log("windowInfo", windowInfo)
 })
+
+onShow(async () => {
+  if (checkIsLogin()) {
+    await getList()
+    if (Object.keys(currentStore.value || {}).length === 0) {
+      currentStore.value = storeList.value[0]
+    }
+  }
+})
+
+/**
+ * 获取仓库列表
+ */
+const getList = async () => {
+  try {
+    uni.showLoading({ mask: true })
+    const { data }: any = await getCmsWarehouseList()
+    storeList.value = data.list
+  } catch (error) {
+    console.log("error", error)
+  } finally {
+    uni.hideLoading()
+  }
+}
 
 const openStoreDrawer = () => {
   DrawerRef.value.open()
 }
 
-const onToolClick = (commondStr: string) => {
+const onToolClick = async (commondStr: string) => {
+  if (!checkIsLogin()) {
+    uni.showToast({
+      title: "请先登录",
+      icon: "none",
+    })
+    return
+  }
   switch (commondStr) {
     case "in":
       uni.navigateTo({
-        url: `/pages/goods/index?type=${commondStr}&storeId=${storeId.value}`,
+        url: `/pages/goods/index?type=${commondStr}&storeId=${currentStore.value.id}`,
       })
       break
     case "out":
+      uni.showLoading({ mask: true })
       uni.scanCode({
-        success: (res) => {
-          console.log("res", res)
+        success: async (res) => {
+          uni.showLoading({ mask: true })
+          const goodsBarCode = res.result
+          const { data } = await getCmsGoodInfo({ goodsBarCode })
+          if (!data || Object.keys(data).length === 0) {
+            uni.showToast({
+              title: "暂无该商品",
+              icon: "none",
+            })
+            return
+          }
+          let currentGood: IGoodsListItem = data
+          if (currentGood.inventory.inventoryNumber === 0) {
+            uni.showToast({
+              title: "该商品已经无库存",
+              icon: "none",
+            })
+            return
+          }
+          currentGood.inventory.inventoryNumber--
+          console.log("currentGood", currentGood)
+          // 库存自动减一
+          await updateCmsGoodsStore(currentGood)
+          uni.showToast({
+            title: "出库成功",
+            icon: "none",
+          })
+        },
+        fail: () => {
+          console.log("fail")
+          uni.hideLoading()
         },
       })
       break
     case "list":
       uni.navigateTo({
-        url: `/pages/goodsList/index?storeId=${storeId.value}`,
+        url: `/pages/goodsList/index?storeId=${currentStore.value.id}`,
+      })
+      break
+    case "stocktaking":
+      uni.navigateTo({
+        url: `/pages/stocktaking/index?type=${commondStr}&storeId=${currentStore.value.id}`,
       })
       break
 
@@ -187,9 +245,9 @@ const onToolClick = (commondStr: string) => {
   }
 }
 
-const onStoreClick = (storeId: string) => {
-  currentStoreId.value = storeId
-  // DrawerRef.value.close()
+const onStoreClick = (data: IWarehouseItem) => {
+  currentStore.value = data
+  DrawerRef.value.close()
 }
 </script>
 

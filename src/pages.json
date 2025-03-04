@@ -34,7 +34,10 @@
 			"path": "pages/store/index",
 			"style": {
 				"navigationBarTitleText": "仓库管理",
-				"backgroundColor": "#FEF9EC"
+				"backgroundColor": "#FEF9EC",
+				"app-plus": {
+					"bounce": "none"
+				}
 			}
 		},
 		{
@@ -58,6 +61,13 @@
 				"backgroundColor": "#FEF9EC"
 			}
 		},
+		{
+			"path": "pages/stocktaking/index",
+			"style": {
+				"navigationBarTitleText": "盘点",
+				"backgroundColor": "#FEF9EC"
+			}
+		},
 	],
 	"globalStyle": {
 		"navigationBarTextStyle": "black",
@@ -69,15 +79,15 @@
 		"list": [
 			{
 				"pagePath": "pages/index/index",
-				"text": "看板",
-				"iconPath": "static/tabs/shouye.png",
-				"selectedIconPath": "static/tabs/shouye-active.png"
+				// "text": "看板",
+				"iconPath": "static/tabs/shouye-unactive.png",
+				"selectedIconPath": "static/tabs/shouye-actived.png"
 			},
 			{
 				"pagePath": "pages/my/index",
-				"text": "我的",
-				"iconPath": "static/tabs/wode.png",
-				"selectedIconPath": "static/tabs/wode-active.png"
+				// "text": "我的",
+				"iconPath": "static/tabs/wode-unactive.png",
+				"selectedIconPath": "static/tabs/wode-actived.png"
 			}
 		],
 		"color": "#9B9B9B",

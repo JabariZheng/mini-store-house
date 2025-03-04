@@ -1,11 +1,10 @@
 /*
  * @Author: ZhengJie
  * @Date: 2025-03-01 01:49:54
- * @LastEditTime: 2025-03-01 03:33:40
+ * @LastEditTime: 2025-03-05 03:21:15
  * @Description: 接口请求封装
  */
 import { CACHE_KEY_MAP } from "@/utils/cache-data"
-console.log("import.meta.env", import.meta.env)
 
 const BASE_API_HOST = import.meta.env.VITE_API_HOST
 const BASE_API_URL = import.meta.env.VITE_API_PREFIX_URL
@@ -35,16 +34,28 @@ export default (options: any, loading: boolean = true) => {
       header,
       ...options,
       success: (res: any) => {
+        if (res.statusCode === 401) {
+          uni.showToast({
+            icon: "none",
+            title: "登录已失效，请重新登录",
+          })
+          uni.removeStorageSync(CACHE_KEY_MAP.USER_INFO)
+          uni.removeStorageSync(CACHE_KEY_MAP.TOKEN)
+          reject()
+          return
+        }
+
         const data = res.data
         if (url.includes("aiseliying-image.oss")) {
           resolve(data)
           return
         }
-        const { code, message } = data
+        
+        const { code, message, msg } = data
         if (SUCCESS_CODE !== code) {
           uni.showToast({
             icon: "none",
-            title: message || "出错了",
+            title: message || msg || "出错了",
           })
           reject(data)
         }

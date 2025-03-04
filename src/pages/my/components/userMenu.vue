@@ -1,7 +1,7 @@
 <!--
  * @Author: ZhengJie
  * @Date: 2025-02-19 03:11:08
- * @LastEditTime: 2025-02-28 16:24:35
+ * @LastEditTime: 2025-03-05 03:00:53
  * @Description: 用户菜单
 -->
 <template>
@@ -26,34 +26,51 @@
 <script lang="ts" setup>
 import { ref } from "vue"
 import Icon_Cangku from "@/static/cangku.png"
-import Icon_Zuhu from "@/static/zuhu.png"
+// import Icon_Zuhu from "@/static/zuhu.png"
 import Icon_Logout from "@/static/logout.png"
+import { logout } from "@/api/modules/auth"
+import { CACHE_KEY_MAP } from "@/utils/cache-data"
+
+const emits = defineEmits(["logout"])
 
 const menuList = ref([
   {
     title: "仓库管理",
+    command: "store",
     icon: Icon_Cangku,
     bgColor: "#F9BE7C",
     link: "/pages/store/index",
   },
-  {
-    title: "分组管理",
-    icon: Icon_Zuhu,
-    bgColor: "#309397",
-    link: "/pages/groups/index",
-  },
+  // {
+  //   title: "分组管理",
+  //   icon: Icon_Zuhu,
+  //   bgColor: "#309397",
+  //   link: "/pages/groups/index",
+  // },
   {
     title: "登出",
+    command: "logout",
     icon: Icon_Logout,
     bgColor: "#E46472",
   },
 ])
 
-const onMenuClick = (menuItem) => {
-  if (menuItem.link) {
-    uni.navigateTo({
-      url: menuItem.link,
-    })
+const onMenuClick = async (menuItem) => {
+  switch (menuItem.command) {
+    case "store":
+      uni.navigateTo({
+        url: menuItem.link,
+      })
+      break
+    case "logout":
+      await logout()
+      uni.removeStorageSync(CACHE_KEY_MAP.TOKEN)
+      uni.removeStorageSync(CACHE_KEY_MAP.USER_INFO)
+      emits("logout")
+      break
+
+    default:
+      break
   }
 }
 </script>

@@ -1,14 +1,8 @@
-<!--
- * @Author: ZhengJie
- * @Date: 2025-02-23 03:21:25
- * @LastEditTime: 2025-03-05 03:15:17
- * @Description: 商品出入库
--->
 <template>
-  <div class="goods-manage-page">
+  <div class="stocktaking-goods-manage-page">
     <div class="goods-img" @click="onChooseImg">
       <img
-        v-if="!goodsInfo.goodsImg"
+        v-if="!goodsInfo.img"
         class="upload-icon"
         src="/static/upload-icon.png"
         alt=""
@@ -17,7 +11,7 @@
         v-else
         class="goods-img-item"
         mode="aspectFit"
-        :src="goodsInfo.goodsImg"
+        :src="goodsInfo.img"
         alt=""
       />
     </div>
@@ -36,12 +30,12 @@
             </text>
           </div>
         </uni-forms-item>
-        <uni-forms-item label="条码" name="goodsBarCode">
+        <uni-forms-item label="条码" name="code">
           <div class="scane-code">
             <uni-easyinput
               type="text"
               :styles="inputStyles"
-              v-model="goodsInfo.goodsBarCode"
+              v-model="goodsInfo.code"
             />
             <img
               @click="onScaneCode"
@@ -51,46 +45,42 @@
             />
           </div>
         </uni-forms-item>
-        <uni-forms-item label="名称" name="goodsName">
+        <uni-forms-item label="名称" name="name">
           <uni-easyinput
             type="text"
-            v-model="goodsInfo.goodsName"
+            v-model="goodsInfo.name"
             :styles="inputStyles"
             placeholder="请输入名称"
           />
         </uni-forms-item>
 
-        <uni-forms-item label="数量" name="goodsNum">
+        <uni-forms-item label="数量" name="num">
           <uni-easyinput
             type="number"
             :styles="inputStyles"
-            v-model="goodsInfo.goodsNum"
+            v-model="goodsInfo.num"
             placeholder="请输入数量"
           />
         </uni-forms-item>
       </uni-forms>
     </div>
     <div class="footer" :style="{ marginBottom: safeAreaBottom }">
-      <button @click="onSave">入库</button>
+      <button>保存</button>
     </div>
   </div>
 </template>
 
 <script lang="ts" setup>
-import { addCmsGoodsToStore, getCmsGoodInfo } from "@/api/modules/goods"
 import { onLoad } from "@dcloudio/uni-app"
 import { reactive, ref } from "vue"
 
 const FormRef = ref<any>({})
 
-let currentStoreId = ref("")
-
 let goodsInfo = reactive({
-  goodsId: undefined,
-  goodsImg: "",
-  goodsName: "",
-  goodsBarCode: "",
-  goodsNum: 1,
+  img: "",
+  name: "",
+  code: "",
+  num: 1,
 })
 let safeAreaBottom = ref("0px")
 
@@ -103,41 +93,17 @@ let ocrResult = ref<any>([])
 
 onLoad((options) => {
   console.log("options", options)
-  const { type, storeId, goodsBarCode } = options
-
-  if (storeId) {
-    currentStoreId.value = storeId
-  }
-  if (goodsBarCode) {
-    goodsInfo.goodsBarCode = goodsBarCode
-  }
+  const { type, storeId } = options
 
   safeAreaBottom.value = uni.getWindowInfo().safeAreaInsets.bottom + "px"
 })
 
-/**
- * 重置页面信息
- */
-const resetPageInfo = () => {
-  goodsInfo = {
-    goodsId: undefined,
-    goodsImg: "",
-    goodsName: "",
-    goodsBarCode: "",
-    goodsNum: 1,
-  }
-  ocrResult.value = []
-}
-
-/**
- * 选择图片
- */
 const onChooseImg = () => {
   uni.chooseImage({
     count: 1,
     success: async (res) => {
       console.log("res.tempFilePaths[0]", res.tempFilePaths[0])
-      goodsInfo.goodsImg = res.tempFilePaths[0]
+      goodsInfo.img = res.tempFilePaths[0]
 
       ocrResult.value = []
       uni.showLoading({ mask: true })
@@ -174,17 +140,13 @@ const onChooseImg = () => {
   })
 }
 
-/**
- * 扫码
- */
 const onScaneCode = () => {
   uni.showLoading({ mask: true })
   uni.scanCode({
-    success: (res: any) => {
+    success: (res) => {
       console.log("res", res)
       if (res.errMsg.includes(":ok")) {
-        goodsInfo.goodsBarCode = res.result
-        getGoodInfoByCode()
+        goodsInfo.code = res.result
       }
     },
     complete: () => {
@@ -194,49 +156,7 @@ const onScaneCode = () => {
 }
 
 const onItemClick = (item: any) => {
-  goodsInfo.goodsName += item.text
-}
-
-/**
- * 根据条码查询商品信息
- */
-const getGoodInfoByCode = async () => {
-  try {
-    uni.showLoading({ mask: true })
-    const { data } = await getCmsGoodInfo({ code: goodsInfo.goodsBarCode })
-    console.log("data", data)
-    if (Object.keys(data).length > 0) {
-      // 已有商品
-      goodsInfo = {
-        ...data,
-        // 默认数量
-        goodsNum: 1,
-      }
-    }
-    uni.hideLoading()
-  } catch (error) {
-    console.log("error")
-  }
-}
-
-/**
- * 入库
- */
-const onSave = async () => {
-  try {
-    uni.showLoading({ mask: true })
-    await addCmsGoodsToStore({
-      ...goodsInfo,
-      warehouseId: currentStoreId.value,
-    })
-    uni.showToast({
-      title: "入库成功",
-      icon: "none",
-    })
-    resetPageInfo()
-  } catch (error) {
-    console.log("error", error)
-  }
+  goodsInfo.name += item.text
 }
 </script>
 
@@ -246,7 +166,7 @@ page {
   background-color: #fef9ec;
 }
 
-.goods-manage-page {
+.stocktaking-goods-manage-page {
   padding: 0 10px;
   height: 100%;
   display: flex;

@@ -1,7 +1,7 @@
 /*
  * @Author: ZhengJie
  * @Date: 2025-03-01 16:02:21
- * @LastEditTime: 2025-03-01 16:45:45
+ * @LastEditTime: 2025-03-02 02:09:49
  * @Description: 仓库
  */
 import { request } from "../request"
@@ -15,18 +15,18 @@ const addCmsWarehouse = (params: any) => {
  * 删除仓库
  */
 const delCmsWarehouse = (params: any) => {
-  return request.delete("/cms/warehouse/delete", params)
+  return request.delete("/cms/warehouse/mini/delete", params)
 }
 /**
  * 更新仓库
  */
 const updateCmsWarehouse = (params: any) => {
-  return request.put("/cms/warehouse/update", params)
+  return request.put("/cms/warehouse/mini/update", params)
 }
 /**
  * 获取仓库列表
  */
-const getCmsWarehouseList = (): Promise<{ data: any }> => {
+const getCmsWarehouseList = (): Promise<any> => {
   return request.get("/cms/warehouse/mini/list")
 }
 

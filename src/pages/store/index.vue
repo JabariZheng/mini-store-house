@@ -1,7 +1,7 @@
 <!--
  * @Author: ZhengJie
  * @Date: 2025-02-19 02:03:00
- * @LastEditTime: 2025-03-02 01:17:22
+ * @LastEditTime: 2025-03-04 15:40:49
  * @Description: 仓库管理
 -->
 <template>
@@ -79,7 +79,7 @@ import {
   getCmsWarehouseList,
   updateCmsWarehouse,
 } from "@/api/modules/warehouse"
-import { IWarehouseItem } from "@/types/warehouse.d"
+import type { IWarehouseItem } from "@/types/warehouse"
 import { onLoad } from "@dcloudio/uni-app"
 import { reactive, ref } from "vue"
 

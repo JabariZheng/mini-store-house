@@ -1,28 +1,105 @@
 <!--
  * @Author: ZhengJie
  * @Date: 2025-02-19 03:07:55
- * @LastEditTime: 2025-02-23 03:20:15
+ * @LastEditTime: 2025-03-05 03:10:21
  * @Description: 用户信息-头部
 -->
 <template>
   <div class="page-head">
     <div class="user-info">
-      <img class="user-info-avatar" :src="info.avatar" alt="" />
+      <img
+        class="user-info-avatar"
+        :src="(info && info.avatar) || UserDefaultAvatar"
+        alt=""
+      />
       <div class="user-info-txt">
-        <div class="user-info-name">{{ info.name }}</div>
-        <div class="user-info-tag">组：{{ '基础用户' }}</div>
+        <!-- <button
+          v-if="!info"
+          class="login-btn"
+          open-type="getPhoneNumber"
+          @getphonenumber="onGetPhoneNumber"
+        >
+          登录
+        </button> -->
+        <button v-if="showLoginBtn" class="login-btn" @click="onLogin">
+          登录
+        </button>
+        <template v-else>
+          <div class="user-info-name">{{ info.userName }}</div>
+          <!-- <div class="user-info-tag">组：{{ "基础用户" }}</div> -->
+        </template>
       </div>
     </div>
   </div>
 </template>
 
 <script lang="ts" setup>
-import { ref } from "vue"
-import UserAvatar from '/static/微信头像.png'
+import { computed, ref, defineExpose } from "vue"
+// import UserAvatar from '/static/微信头像.png'
+import UserDefaultAvatar from "@/static/default-user.png"
+import { getUserInfo, login } from "@/api/modules/auth"
+import { CACHE_KEY_MAP } from "@/utils/cache-data"
+import { onShow } from "@dcloudio/uni-app"
 
-const info = ref({
-  name: "漆黑大枕头",
-  avatar: UserAvatar,
+const emits = defineEmits(["login"])
+
+// const info = ref({
+//   name: "",
+//   avatar: UserAvatar,
+// })
+let info = ref({})
+
+const showLoginBtn = computed(() => {
+  return !info.value || Object.keys(info.value).length === 0
+})
+
+onShow(() => {
+  getUserInfoFromStorage()
+})
+
+const getUserInfoFromStorage = () => {
+  const userInfo = uni.getStorageSync(CACHE_KEY_MAP.USER_INFO) || {}
+  info.value = userInfo.info
+}
+
+const onGetPhoneNumber = (e: any) => {
+  console.log(e)
+  const phoneCode = e.detail.code
+  uni.login({
+    success: async (res) => {
+      const jsCode = res.code
+      const { data: loginData }: any = await login({ jsCode, phoneCode })
+      console.log("resData", loginData.token)
+      uni.setStorageSync(CACHE_KEY_MAP.TOKEN, loginData.token)
+      const { data: userInfoData }: any = await getUserInfo()
+      console.log("userInfoData", userInfoData)
+      uni.setStorageSync(CACHE_KEY_MAP.USER_INFO, userInfoData)
+      getUserInfoFromStorage()
+    },
+  })
+}
+const onLogin = () => {
+  uni.login({
+    success: async (res) => {
+      const jsCode = res.code
+      const { data: loginData } = await login({ jsCode })
+      console.log("resData", loginData.token)
+      uni.setStorageSync(CACHE_KEY_MAP.TOKEN, loginData.token)
+      const { data: userInfoData } = await getUserInfo()
+      console.log("userInfoData", userInfoData)
+      uni.setStorageSync(CACHE_KEY_MAP.USER_INFO, userInfoData)
+      getUserInfoFromStorage()
+      emits("login")
+    },
+  })
+}
+
+const clearUserInfo = () => {
+  info.value = {}
+}
+
+defineExpose({
+  clearUserInfo,
 })
 </script>
 
@@ -66,6 +143,14 @@ const info = ref({
       .user-info-tag {
         color: #6f6558;
         font-size: 14px;
+      }
+
+      .login-btn {
+        background-color: transparent;
+        border: none;
+        &::after {
+          border: none;
+        }
       }
     }
   }

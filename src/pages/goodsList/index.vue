@@ -13,13 +13,20 @@
     </div>
     <div class="goods-list-container">
       <scroll-view :scrollY="true" class="goods-list-container-scroll-view">
-        <div v-for="(item, index) in listData" :key="index" class="goods-item">
+        <div
+          v-for="(item, index) in listData"
+          :key="index"
+          class="goods-item"
+          @click="onItemClick(item)"
+        >
           <div class="goods-item-img">
-            <img :src="item.img" mode="aspectFit" alt="" />
+            <img :src="item.goodsImg" mode="aspectFit" alt="" />
           </div>
           <div class="goods-item-info">
-            <div class="goods-item-info-title">{{ item.name }}</div>
-            <div class="goods-item-info-num">库存：{{ item.num }}</div>
+            <div class="goods-item-info-title">{{ item.goodsName }}</div>
+            <div class="goods-item-info-num">
+              库存：{{ item.inventory.inventoryNumber }}
+            </div>
             <div class="goods-item-info-date">
               更新时间：{{ item.updateDate }}
             </div>
@@ -27,55 +34,148 @@
         </div>
       </scroll-view>
     </div>
+    <uni-fab
+      ref="fab"
+      :pattern="fabPattern"
+      horizontal="right"
+      :content="fabContent"
+      @trigger="fabTrigger"
+    />
   </div>
+  <uni-popup ref="DetailDialogRef" type="dialog">
+    <div class="detail-dialog-container">
+      <div class="goods-img">
+        <img mode="aspectFit" :src="currentGood.goodsImg" alt="" />
+      </div>
+      <div class="goods-item-info">
+        <div class="goods-item-info-item">
+          <text class="info-label">名称：</text>
+          <uni-easyinput
+            v-if="isStocktaking"
+            trim="all"
+            v-model="currentGood.goodsName"
+            :styles="inputStyles"
+          ></uni-easyinput>
+          <text v-else class="info-value">{{ currentGood.goodsName }}</text>
+        </div>
+        <div class="goods-item-info-item">
+          <text class="info-label">条码：</text>
+          <uni-easyinput
+            v-if="isStocktaking"
+            trim="all"
+            type="number"
+            :styles="inputStyles"
+            v-model="currentGood.goodsBarCode"
+          ></uni-easyinput>
+          <text v-else class="info-value">{{ currentGood.goodsBarCode }}</text>
+        </div>
+        <div class="goods-item-info-item">
+          <text class="info-label">库存：</text>
+          <uni-easyinput
+            v-if="isStocktaking"
+            trim="all"
+            type="number"
+            :styles="inputStyles"
+            v-model="currentGood.inventory.inventoryNumber"
+          ></uni-easyinput>
+          <text v-else class="info-value">{{
+            currentGood.inventory.inventoryNumber
+          }}</text>
+        </div>
+        <template v-if="!isStocktaking">
+          <div class="goods-item-info-item">
+            <text class="info-label">创建时间：</text>
+            <text class="info-value">{{ currentGood.createDate }}</text>
+          </div>
+          <div class="goods-item-info-item">
+            <text class="info-label">入库时间：</text>
+            <text class="info-value">{{
+              currentGood.inventory.updateDate
+            }}</text>
+          </div>
+        </template>
+      </div>
+      <div v-if="isStocktaking" class="goods-info-save">
+        <button @click="onSave">保存</button>
+      </div>
+    </div>
+  </uni-popup>
 </template>
 
 <script lang="ts" setup>
-import { computed, ref } from "vue"
+import { computed, ref, reactive } from "vue"
+import {
+  getCmsGoodsList,
+  getCmsGoodInfo,
+  updateCmsGoodsStore,
+} from "@/api/modules/goods"
+import type { IGoodsListItem } from "@/types/goods"
+import { onLoad } from "@dcloudio/uni-app"
+
+const DetailDialogRef = ref<any>({})
 
 let searchValue = ref("")
-let goodsData = ref([
-  {
-    id: 1,
-    img: "https://img1.baidu.com/it/u=299351885,2499182433&fm=253&fmt=auto&app=120&f=JPEG?w=500&h=543",
-    name: "奶酪棒1",
-    num: 10,
-    updateDate: "2020-01-01",
+let goodsData = ref<IGoodsListItem[]>([])
+let isStocktaking = ref(false)
+let currentGood = reactive<IGoodsListItem>({
+  id: "",
+  goodsName: "",
+  goodsBarCode: "",
+  goodsImg: "",
+  status: "",
+  createBy: "",
+  createDate: "",
+  updateBy: "",
+  updateDate: "",
+  inventory: {
+    goodsId: "",
+    inventoryNumber: 0,
+    warehouseId: "",
+    createBy: "",
+    createDate: "",
+    updateBy: "",
+    updateDate: "",
   },
+})
+const fabContent = reactive([
   {
-    id: 1,
-    img: "https://img1.baidu.com/it/u=299351885,2499182433&fm=253&fmt=auto&app=120&f=JPEG?w=500&h=543",
-    name: "奶酪棒2",
-    num: 10,
-    updateDate: "2020-01-01",
-  },
-  {
-    id: 1,
-    img: "https://img1.baidu.com/it/u=299351885,2499182433&fm=253&fmt=auto&app=120&f=JPEG?w=500&h=543",
-    name: "奶酪棒3",
-    num: 10,
-    updateDate: "2020-01-01",
-  },
-  {
-    id: 1,
-    img: "https://img1.baidu.com/it/u=299351885,2499182433&fm=253&fmt=auto&app=120&f=JPEG?w=500&h=543",
-    name: "奶酪棒4",
-    num: 10,
-    updateDate: "2020-01-01",
-  },
-  {
-    id: 1,
-    img: "https://img1.baidu.com/it/u=299351885,2499182433&fm=253&fmt=auto&app=120&f=JPEG?w=500&h=543",
-    name: "奶酪棒5",
-    num: 10,
-    updateDate: "2020-01-01",
+    iconPath: "/static/pandian-0D253F.png",
+    selectedIconPath: "/static/pandian-0D253F.png",
+    text: "盘点",
+    active: false,
   },
 ])
+const fabPattern = reactive({
+  buttonColor: "#6488E4",
+})
+const inputStyles = {
+  borderColor: "transparent",
+  backgroundColor: "transparent",
+  textAlign: "right",
+}
 
 const listData = computed(() => {
   if (!searchValue.value) return goodsData.value
-  return goodsData.value.filter((item) => item.name.includes(searchValue.value))
+  return goodsData.value.filter((item) =>
+    item.goodsName.includes(searchValue.value)
+  )
 })
+
+onLoad(() => {
+  getList()
+})
+
+const getList = async () => {
+  try {
+    uni.showLoading({ mask: true })
+    const { data } = await getCmsGoodsList()
+    console.log("data:", data)
+    goodsData.value = data.list
+    uni.hideLoading()
+  } catch (error) {
+    console.log("error:", error)
+  }
+}
 const onSearch = ({ value }) => {
   console.log("onSearch:", value)
   searchValue.value = value
@@ -83,6 +183,93 @@ const onSearch = ({ value }) => {
 const onClear = ({ value }) => {
   console.log("onClear:", value)
   searchValue.value = value
+}
+
+const onItemClick = (data: IGoodsListItem) => {
+  for (let item in data) {
+    currentGood[item] = data[item]
+  }
+  isStocktaking.value = false
+  DetailDialogRef.value.open()
+}
+
+const fabTrigger = async ({ index }: any) => {
+  switch (index) {
+    case 0:
+      // 盘点
+      uni.showLoading({ mask: true })
+      uni.scanCode({
+        success: async (res) => {
+          const goodsBarCode = res.result
+          const { data } = await getCmsGoodInfo({ goodsBarCode })
+          if (!data || Object.keys(data).length === 0) {
+            // 库中没有商品，走新增方式
+            uni.showToast({
+              title: "仓库中没有该商品，去新增入库",
+              icon: "none",
+            })
+            setTimeout(() => {
+              uni.navigateTo({
+                url: `/pages/goods/index?goodsBarCode=${goodsBarCode}`,
+              })
+            }, 1000)
+            return
+          }
+          currentGood = data
+          isStocktaking.value = true
+          DetailDialogRef.value.open()
+        },
+        complete: () => {
+          uni.hideLoading()
+        },
+      })
+      break
+
+    default:
+      break
+  }
+}
+
+const onSave = async () => {
+  console.log("currentGood", currentGood)
+  if (isNaN(parseFloat(currentGood.inventory.inventoryNumber))) {
+    uni.showToast({
+      title: "请输入正确的库存数量",
+      icon: "none",
+    })
+    return
+  }
+  if (!currentGood.goodsBarCode) {
+    uni.showToast({
+      title: "请输入条码",
+      icon: "none",
+    })
+    return
+  }
+  if (!currentGood.goodsName) {
+    uni.showToast({
+      title: "请输入商品名称",
+      icon: "none",
+    })
+    return
+  }
+  try {
+    uni.showLoading({ mask: true })
+    await updateCmsGoodsStore(currentGood)
+    uni.showToast({
+      title: "保存成功",
+      icon: "none",
+    })
+    DetailDialogRef.value.close()
+    goodsData.value = []
+    setTimeout(() => {
+      getList()
+    }, 500)
+  } catch (error) {
+    console.log("error", error)
+  } finally {
+    uni.hideLoading()
+  }
 }
 </script>
 
@@ -143,6 +330,52 @@ page {
           }
         }
       }
+    }
+  }
+}
+.detail-dialog-container {
+  display: flex;
+  flex-flow: column;
+  background-color: #fef9ec;
+  border-radius: 5px;
+  padding: 20px;
+  .goods-img {
+    height: 200px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    image {
+      max-width: 100%;
+      max-height: 100%;
+    }
+  }
+  .goods-item-info {
+    display: flex;
+    flex-flow: column;
+    &-item {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 5px 0;
+      border-bottom: 1px solid rgba(70, 80, 83, 0.1);
+      .info-label {
+        color: #696969;
+      }
+      .info-value {
+        color: #0d253f;
+      }
+    }
+
+    .uni-easyinput {
+      text-align: right;
+    }
+  }
+  .goods-info-save {
+    margin-top: 20px;
+    button {
+      background-color: #6488e4;
+      color: #fff;
+      border-radius: 100px;
     }
   }
 }
