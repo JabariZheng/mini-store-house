@@ -1,7 +1,7 @@
 <!--
  * @Author: ZhengJie
  * @Date: 2024-11-29 20:28:52
- * @LastEditTime: 2025-03-05 03:20:59
+ * @LastEditTime: 2025-03-05 03:50:14
  * @Description: 首页
 -->
 <template>
@@ -167,9 +167,9 @@ const getList = async () => {
     uni.showLoading({ mask: true })
     const { data }: any = await getCmsWarehouseList()
     storeList.value = data.list
+    uni.hideLoading()
   } catch (error) {
     console.log("error", error)
-  } finally {
     uni.hideLoading()
   }
 }
