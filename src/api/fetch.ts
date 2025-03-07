@@ -1,10 +1,11 @@
 /*
  * @Author: ZhengJie
  * @Date: 2025-03-01 01:49:54
- * @LastEditTime: 2025-03-05 03:21:15
+ * @LastEditTime: 2025-03-08 01:17:28
  * @Description: 接口请求封装
  */
-import { CACHE_KEY_MAP } from "@/utils/cache-data"
+import { useUserStore } from "@/store/user"
+// import { CACHE_KEY_MAP } from "@/utils/cache-data"
 
 const BASE_API_HOST = import.meta.env.VITE_API_HOST
 const BASE_API_URL = import.meta.env.VITE_API_PREFIX_URL
@@ -18,11 +19,13 @@ export default (options: any, loading: boolean = true) => {
     })
   }
   return new Promise((resolve: any, reject: any) => {
+    const userStore = useUserStore()
     const { url, method, data } = options
     delete options.url
     delete options.method
     delete options.data
-    const token = uni.getStorageSync(CACHE_KEY_MAP.TOKEN) || ""
+    const token = userStore.getToken
+    // const token = uni.getStorageSync(CACHE_KEY_MAP.TOKEN)
     const header: any = { "content-type": "application/json" }
     if (token) {
       header["Authorization"] = token
@@ -39,8 +42,7 @@ export default (options: any, loading: boolean = true) => {
             icon: "none",
             title: "登录已失效，请重新登录",
           })
-          uni.removeStorageSync(CACHE_KEY_MAP.USER_INFO)
-          uni.removeStorageSync(CACHE_KEY_MAP.TOKEN)
+          userStore.clearAuth()
           reject()
           return
         }
@@ -50,7 +52,7 @@ export default (options: any, loading: boolean = true) => {
           resolve(data)
           return
         }
-        
+
         const { code, message, msg } = data
         if (SUCCESS_CODE !== code) {
           uni.showToast({

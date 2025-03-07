@@ -1,13 +1,13 @@
 <!--
  * @Author: ZhengJie
  * @Date: 2025-02-19 02:03:27
- * @LastEditTime: 2025-03-05 03:08:28
+ * @LastEditTime: 2025-03-08 01:17:07
  * @Description: 我的
 -->
 <template>
   <div class="my-page">
-    <PageHeader ref="PageHeaderRef" @login="setLoinStatus" />
-    <UserMenu v-if="isLogin" @logout="onLogout" />
+    <PageHeader ref="PageHeaderRef" />
+    <UserMenu v-if="hasUserInfo" @logout="onLogout" />
     <!-- <div class="logout-btn">
       <button>退出登录</button>
     </div> -->
@@ -15,28 +15,29 @@
 </template>
 
 <script lang="ts" setup>
-import { checkIsLogin } from "@/utils"
-import { onShow } from "@dcloudio/uni-app"
-import { ref } from "vue"
+import { onLoad, onReady, onShow } from "@dcloudio/uni-app"
+import { computed, ref } from "vue"
 import PageHeader from "./components/header.vue"
 import UserMenu from "./components/userMenu.vue"
+import { useUserStore } from "@/store/user"
 
-const PageHeaderRef = ref({})
+const PageHeaderRef = ref<any>()
 
-let isLogin = ref(false)
+const userStore = useUserStore()
 
-const onLogout = () => {
-  PageHeaderRef.value.clearUserInfo()
-  setLoinStatus()
-}
-
-onShow(() => {
-  setLoinStatus()
+const hasUserInfo = computed(() => {
+  return Object.keys(userStore.getUserInfo).length > 0
 })
 
-const setLoinStatus = () => {
-  isLogin.value = checkIsLogin()
+const onLogout = () => {
+  userStore.userLogout()
 }
+
+onReady(() => {})
+
+onLoad(() => {})
+
+onShow(() => {})
 </script>
 
 <style lang="scss">

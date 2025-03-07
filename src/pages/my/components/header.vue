@@ -1,7 +1,7 @@
 <!--
  * @Author: ZhengJie
  * @Date: 2025-02-19 03:07:55
- * @LastEditTime: 2025-03-05 03:10:21
+ * @LastEditTime: 2025-03-08 01:20:27
  * @Description: 用户信息-头部
 -->
 <template>
@@ -34,33 +34,27 @@
 </template>
 
 <script lang="ts" setup>
-import { computed, ref, defineExpose } from "vue"
-// import UserAvatar from '/static/微信头像.png'
+import { computed, ref } from "vue"
 import UserDefaultAvatar from "@/static/default-user.png"
 import { getUserInfo, login } from "@/api/modules/auth"
-import { CACHE_KEY_MAP } from "@/utils/cache-data"
 import { onShow } from "@dcloudio/uni-app"
+import { useUserStore } from "@/store/user"
 
 const emits = defineEmits(["login"])
 
-// const info = ref({
-//   name: "",
-//   avatar: UserAvatar,
-// })
-let info = ref({})
+let userStore = useUserStore()
+
+const info = computed(() => {
+  return userStore.getUserInfo
+})
 
 const showLoginBtn = computed(() => {
   return !info.value || Object.keys(info.value).length === 0
 })
 
 onShow(() => {
-  getUserInfoFromStorage()
+  console.log("onShow")
 })
-
-const getUserInfoFromStorage = () => {
-  const userInfo = uni.getStorageSync(CACHE_KEY_MAP.USER_INFO) || {}
-  info.value = userInfo.info
-}
 
 const onGetPhoneNumber = (e: any) => {
   console.log(e)
@@ -70,11 +64,11 @@ const onGetPhoneNumber = (e: any) => {
       const jsCode = res.code
       const { data: loginData }: any = await login({ jsCode, phoneCode })
       console.log("resData", loginData.token)
-      uni.setStorageSync(CACHE_KEY_MAP.TOKEN, loginData.token)
+      userStore.setToken(loginData.token)
       const { data: userInfoData }: any = await getUserInfo()
       console.log("userInfoData", userInfoData)
-      uni.setStorageSync(CACHE_KEY_MAP.USER_INFO, userInfoData)
-      getUserInfoFromStorage()
+      userStore.setUserInfo(userInfoData.info)
+      emits("login")
     },
   })
 }
@@ -82,25 +76,16 @@ const onLogin = () => {
   uni.login({
     success: async (res) => {
       const jsCode = res.code
-      const { data: loginData } = await login({ jsCode })
+      const { data: loginData }: any = await login({ jsCode })
       console.log("resData", loginData.token)
-      uni.setStorageSync(CACHE_KEY_MAP.TOKEN, loginData.token)
-      const { data: userInfoData } = await getUserInfo()
+      userStore.setToken(loginData.token)
+      const { data: userInfoData }: any = await getUserInfo()
       console.log("userInfoData", userInfoData)
-      uni.setStorageSync(CACHE_KEY_MAP.USER_INFO, userInfoData)
-      getUserInfoFromStorage()
+      userStore.setUserInfo(userInfoData.info)
       emits("login")
     },
   })
 }
-
-const clearUserInfo = () => {
-  info.value = {}
-}
-
-defineExpose({
-  clearUserInfo,
-})
 </script>
 
 <style lang="less" scoped>
