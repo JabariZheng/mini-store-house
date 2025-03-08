@@ -3,7 +3,7 @@ import type { IInventoryItem } from "./inventory"
 /*
  * @Author: ZhengJie
  * @Date: 2025-03-03 14:25:44
- * @LastEditTime: 2025-03-04 15:41:39
+ * @LastEditTime: 2025-03-09 02:26:45
  * @Description: goods.d
  */
 declare interface IGoodsItem {
@@ -19,6 +19,7 @@ declare interface IGoodsItem {
 }
 
 declare interface IGoodsListItem extends IGoodsItem {
+  [key: string]: any
   inventory: IInventoryItem
 }
 

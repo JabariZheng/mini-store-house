@@ -1,7 +1,7 @@
 <!--
  * @Author: ZhengJie
  * @Date: 2025-02-19 02:03:00
- * @LastEditTime: 2025-03-04 15:40:49
+ * @LastEditTime: 2025-03-08 21:20:03
  * @Description: 仓库管理
 -->
 <template>
@@ -15,7 +15,7 @@
               :right-options="rightOptions"
               @click="onSwipeActionClick($event, item)"
             >
-              <div class="store-item" @click="onItemClick(item)">
+              <div class="store-item" @click="onItemClick($event, item)">
                 <div class="store-item-name">{{ item.warehouseName }}</div>
                 <div class="store-item-desc">
                   更新时间：{{ item.updateDate }}
@@ -80,8 +80,9 @@ import {
   updateCmsWarehouse,
 } from "@/api/modules/warehouse"
 import type { IWarehouseItem } from "@/types/warehouse"
+import { hideLoading, showLoading } from "@/utils/loading"
 import { onLoad } from "@dcloudio/uni-app"
-import { reactive, ref } from "vue"
+import { nextTick, reactive, ref } from "vue"
 
 const DialogRef = ref<any>({})
 const ConfirmDialogRef = ref<any>({})
@@ -96,11 +97,12 @@ const rightOptions = ref([
   },
 ])
 
-let currentItem = reactive<IWarehouseItem | any>({
-  id: undefined,
-  warehouseName: "",
-  swiperShow: "none",
-})
+let currentItem = ref<IWarehouseItem | any>({})
+// let currentItem = reactive<IWarehouseItem | any>({
+//   id: undefined,
+//   warehouseName: "",
+//   swiperShow: "none",
+// })
 let storeList = ref<IWarehouseItem[] | any[]>([])
 
 let safeAreaBottom = ref("0px")
@@ -113,37 +115,44 @@ onLoad((options) => {
 const getList = async () => {
   try {
     storeList.value = []
-    uni.showLoading({ mask: true })
+    showLoading()
+    // uni.showLoading({ mask: true })
     const { data }: any = await getCmsWarehouseList()
     storeList.value = data.list.map((item: any) => {
       item.swiperShow = "none"
       return item
     })
+    hideLoading()
+    // uni.hideLoading()
   } catch (error) {
     console.log("error", error)
-  } finally {
-    uni.hideLoading()
+    hideLoading()
+    // uni.hideLoading()
   }
 }
 
-const onAdd = () => {
-  currentItem = {
-    id: undefined,
-    swiperShow: "none",
-    warehouseName: "",
-  }
+const onAdd = async () => {
+  await nextTick()
+  currentItem.value = {}
+  // currentItem = {
+  //   ...currentItem,
+  //   id: undefined,
+  //   swiperShow: "none",
+  //   warehouseName: "",
+  // }
   DialogRef.value.open()
 }
 
 const dialogInputConfirm = async () => {
-  if (!currentItem.warehouseName) {
+  if (!currentItem.value.warehouseName) {
     DialogRef.value.close()
   }
   try {
-    uni.showLoading({ mask: true })
-    if (!currentItem.id) {
+    showLoading()
+    // uni.showLoading({ mask: true })
+    if (!currentItem.value.id) {
       await addCmsWarehouse({
-        warehouseName: currentItem.warehouseName,
+        warehouseName: currentItem.value.warehouseName,
       })
       uni.showToast({
         title: "添加成功",
@@ -151,15 +160,18 @@ const dialogInputConfirm = async () => {
       })
     } else {
       await updateCmsWarehouse({
-        id: currentItem.id,
-        warehouseName: currentItem.warehouseName,
+        id: currentItem.value.id,
+        warehouseName: currentItem.value.warehouseName,
       })
       uni.showToast({
         title: "修改成功",
         icon: "none",
       })
     }
-    uni.hideLoading()
+    await nextTick()
+    currentItem.value.warehouseName = ""
+    // uni.hideLoading()
+    hideLoading()
     dialogClose()
     getList()
   } catch (error: any) {
@@ -174,48 +186,57 @@ const dialogClose = () => {
   DialogRef.value.close()
 }
 
-const onItemClick = (data: IWarehouseItem | any) => {
-  for (let item in data) {
-    currentItem[item] = data[item]
-  }
+const onItemClick = async (e: MouseEvent, data: IWarehouseItem | any) => {
+  e.stopPropagation()
+  await nextTick()
+  // for (let item in data) {
+  //   currentItem[item] = data[item]
+  // }
+  currentItem.value = { ...data }
   DialogRef.value.open()
 }
 
-const onSwipeActionClick = (event: any, data: IWarehouseItem | any) => {
+const onSwipeActionClick = async (event: any, data: IWarehouseItem | any) => {
   if (event.index === 0) {
-    for (let item in data) {
-      currentItem[item] = data[item]
-    }
+    await nextTick()
+    // for (let item in data) {
+    //   currentItem[item] = data[item]
+    // }
+    currentItem.value = { ...data }
     ConfirmDialogRef.value.open()
   }
 }
 
 const dialogConfirm = async () => {
-  console.log("点击确认")
   try {
-    uni.showLoading({ mask: true })
+    showLoading()
+    // uni.showLoading({ mask: true })
     await delCmsWarehouse({
-      ids: [currentItem.id],
+      ids: [currentItem.value.id],
     })
     uni.showToast({
       title: "删除成功",
       icon: "none",
     })
-    currentItem = {
-      id: undefined,
-      swiperShow: "none",
-      warehouseName: "",
-    }
+    await nextTick()
+    currentItem.value = {}
+    // currentItem = {
+    //   id: undefined,
+    //   swiperShow: "none",
+    //   warehouseName: "",
+    // }
     getList()
-    uni.hideLoading()
+    // uni.hideLoading()
+    hideLoading()
   } catch (error) {
     console.log("error")
-    uni.hideLoading()
+    hideLoading()
+    // uni.hideLoading()
   }
 }
-const dialogConfirmClose = () => {
-  currentItem.swiperShow = "none"
-  console.log("点击关闭")
+const dialogConfirmClose = async () => {
+  await nextTick()
+  currentItem.value.swiperShow = "none"
 }
 </script>
 

@@ -1,14 +1,14 @@
 /*
  * @Author: ZhengJie
  * @Date: 2025-03-01 01:49:54
- * @LastEditTime: 2025-03-08 01:17:28
+ * @LastEditTime: 2025-03-09 02:47:57
  * @Description: 接口请求封装
  */
 import { useUserStore } from "@/store/user"
 // import { CACHE_KEY_MAP } from "@/utils/cache-data"
 
-const BASE_API_HOST = import.meta.env.VITE_API_HOST
-const BASE_API_URL = import.meta.env.VITE_API_PREFIX_URL
+export const BASE_API_HOST = import.meta.env.VITE_API_HOST
+export const BASE_API_URL = import.meta.env.VITE_API_PREFIX_URL
 const SUCCESS_CODE = 200
 
 export default (options: any, loading: boolean = true) => {
@@ -54,6 +54,16 @@ export default (options: any, loading: boolean = true) => {
         }
 
         const { code, message, msg } = data
+        // 413是服务拦截器提示
+        if (res.statusCode === 413) {
+          uni.showToast({
+            icon: "none",
+            title: message || msg || "出错了",
+          })
+          userStore.clearAuth()
+          reject()
+          return
+        }
         if (SUCCESS_CODE !== code) {
           uni.showToast({
             icon: "none",

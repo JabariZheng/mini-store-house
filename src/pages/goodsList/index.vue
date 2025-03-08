@@ -20,7 +20,11 @@
           @click="onItemClick(item)"
         >
           <div class="goods-item-img">
-            <img :src="item.goodsImg" mode="aspectFit" alt="" />
+            <img
+              :src="(item.goodsImg && BASE_API_HOST + item.goodsImg) || ''"
+              mode="aspectFit"
+              alt=""
+            />
           </div>
           <div class="goods-item-info">
             <div class="goods-item-info-title">{{ item.goodsName }}</div>
@@ -45,7 +49,13 @@
   <uni-popup ref="DetailDialogRef" type="dialog">
     <div class="detail-dialog-container">
       <div class="goods-img">
-        <img mode="aspectFit" :src="currentGood.goodsImg" alt="" />
+        <img
+          mode="aspectFit"
+          :src="
+            (currentGood.goodsImg && BASE_API_HOST + currentGood.goodsImg) || ''
+          "
+          alt=""
+        />
       </div>
       <div class="goods-item-info">
         <div class="goods-item-info-item">
@@ -95,8 +105,9 @@
           </div>
         </template>
       </div>
-      <div v-if="isStocktaking" class="goods-info-save">
-        <button @click="onSave">保存</button>
+      <div class="goods-info-save">
+        <button @click="onChangeImg">更换图片</button>
+        <button v-if="isStocktaking" @click="onSave">保存</button>
       </div>
     </div>
   </uni-popup>
@@ -108,11 +119,17 @@ import {
   getCmsGoodsList,
   getCmsGoodInfo,
   updateCmsGoodsStore,
+  updateCmsGoods,
 } from "@/api/modules/goods"
 import type { IGoodsListItem } from "@/types/goods"
 import { onLoad } from "@dcloudio/uni-app"
+import { BASE_API_HOST } from "@/api/fetch"
+import { hideLoading, showLoading } from "@/utils/loading"
+import { useUserStore } from "@/store/user"
 
 const DetailDialogRef = ref<any>({})
+
+const userStore = useUserStore()
 
 let searchValue = ref("")
 let goodsData = ref<IGoodsListItem[]>([])
@@ -169,18 +186,22 @@ const getList = async () => {
   try {
     uni.showLoading({ mask: true })
     const { data } = await getCmsGoodsList()
-    console.log("data:", data)
-    goodsData.value = data.list
+    goodsData.value = data.list.map((item: IGoodsListItem) => {
+      // if (item.goodsImg) {
+      //   item.goodsImg = `${BASE_API_HOST}${item.goodsImg}`
+      // }
+      return item
+    })
     uni.hideLoading()
   } catch (error) {
     console.log("error:", error)
   }
 }
-const onSearch = ({ value }) => {
+const onSearch = ({ value }: any) => {
   console.log("onSearch:", value)
   searchValue.value = value
 }
-const onClear = ({ value }) => {
+const onClear = ({ value }: any) => {
   console.log("onClear:", value)
   searchValue.value = value
 }
@@ -230,9 +251,51 @@ const fabTrigger = async ({ index }: any) => {
   }
 }
 
+const onChangeImg = () => {
+  uni.chooseImage({
+    count: 1,
+    success: async (res) => {
+      // uni.showLoading({ mask: true })
+      showLoading()
+      const uploadFileRes = await uni.uploadFile({
+        url: BASE_API_HOST + "/sys/upload-images/item",
+        filePath: res.tempFilePaths[0],
+        header: {
+          Authorization: userStore.getToken,
+        },
+        name: "file",
+      })
+      try {
+        const fileData = JSON.parse(uploadFileRes.data)
+        if (uploadFileRes.statusCode !== 201) {
+          uni.showToast({
+            title: fileData.msg,
+            icon: "none",
+          })
+          return
+        }
+        currentGood.goodsImg = fileData.data.url
+        console.log("currentGood.goodsImg", currentGood.goodsImg)
+        // 直接更新商品
+        await updateCmsGoods({ ...currentGood, inventory: undefined })
+        // 更新list中的值
+        const getIndex = goodsData.value.findIndex(
+          (item) => item.id === currentGood.id
+        )
+        goodsData.value[getIndex].goodsImg = currentGood.goodsImg
+        hideLoading()
+      } catch (error) {
+        console.log("JSON.parse error after uploadFile ", error)
+        hideLoading()
+      }
+      return
+    },
+  })
+}
+
 const onSave = async () => {
   console.log("currentGood", currentGood)
-  if (isNaN(parseFloat(currentGood.inventory.inventoryNumber))) {
+  if (isNaN(+currentGood.inventory.inventoryNumber)) {
     uni.showToast({
       title: "请输入正确的库存数量",
       icon: "none",
@@ -371,11 +434,17 @@ page {
     }
   }
   .goods-info-save {
+    display: flex;
+    align-items: center;
     margin-top: 20px;
     button {
+      flex: 1;
       background-color: #6488e4;
       color: #fff;
       border-radius: 100px;
+      &:not(:last-child) {
+        margin-right: 20px;
+      }
     }
   }
 }

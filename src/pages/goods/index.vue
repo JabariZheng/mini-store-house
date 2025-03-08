@@ -1,7 +1,7 @@
 <!--
  * @Author: ZhengJie
  * @Date: 2025-02-23 03:21:25
- * @LastEditTime: 2025-03-05 03:15:17
+ * @LastEditTime: 2025-03-09 02:22:44
  * @Description: 商品出入库
 -->
 <template>
@@ -64,7 +64,7 @@
           <uni-easyinput
             type="number"
             :styles="inputStyles"
-            v-model="goodsInfo.goodsNum"
+            v-model="goodsNum"
             placeholder="请输入数量"
           />
         </uni-forms-item>
@@ -77,21 +77,27 @@
 </template>
 
 <script lang="ts" setup>
+import { BASE_API_HOST } from "@/api/fetch"
 import { addCmsGoodsToStore, getCmsGoodInfo } from "@/api/modules/goods"
+import { useUserStore } from "@/store/user"
+import type { IGoodsListItem } from "@/types/goods"
+import { hideLoading, showLoading } from "@/utils/loading"
 import { onLoad } from "@dcloudio/uni-app"
 import { reactive, ref } from "vue"
+
+const userStore = useUserStore()
 
 const FormRef = ref<any>({})
 
 let currentStoreId = ref("")
-
-let goodsInfo = reactive({
-  goodsId: undefined,
+let currentUploadFileRes = ref<{ id: string; url: string } | any>({})
+let goodsInfo = ref<IGoodsListItem | any>({
+  goodsBarCode: "",
   goodsImg: "",
   goodsName: "",
-  goodsBarCode: "",
-  goodsNum: 1,
+  id: "",
 })
+let goodsNum = ref(1)
 let safeAreaBottom = ref("0px")
 
 const inputStyles = reactive({
@@ -102,14 +108,13 @@ const inputStyles = reactive({
 let ocrResult = ref<any>([])
 
 onLoad((options) => {
-  console.log("options", options)
-  const { type, storeId, goodsBarCode } = options
+  const { type, storeId, goodsBarCode }: any = options
 
   if (storeId) {
     currentStoreId.value = storeId
   }
   if (goodsBarCode) {
-    goodsInfo.goodsBarCode = goodsBarCode
+    goodsInfo.value.goodsBarCode = goodsBarCode
   }
 
   safeAreaBottom.value = uni.getWindowInfo().safeAreaInsets.bottom + "px"
@@ -119,14 +124,9 @@ onLoad((options) => {
  * 重置页面信息
  */
 const resetPageInfo = () => {
-  goodsInfo = {
-    goodsId: undefined,
-    goodsImg: "",
-    goodsName: "",
-    goodsBarCode: "",
-    goodsNum: 1,
-  }
+  goodsInfo.value = {}
   ocrResult.value = []
+  goodsNum.value = 1
 }
 
 /**
@@ -136,42 +136,71 @@ const onChooseImg = () => {
   uni.chooseImage({
     count: 1,
     success: async (res) => {
-      console.log("res.tempFilePaths[0]", res.tempFilePaths[0])
-      goodsInfo.goodsImg = res.tempFilePaths[0]
+      goodsInfo.value.goodsImg = res.tempFilePaths[0]
 
       ocrResult.value = []
-      uni.showLoading({ mask: true })
+      // uni.showLoading({ mask: true })
+      showLoading()
 
-      const invokeRes = await uni.serviceMarket.invokeService({
-        service: "wx79ac3de8be320b71", //固定的不要动
-        api: "OcrAllInOne", //固定的不要动
-        data: {
-          // 用 CDN 方法标记要上传并转换成 HTTP URL 的文件
-          img_url: new uni.serviceMarket.CDN({
-            type: "filePath",
-            filePath: res.tempFilePaths[0],
-          }),
-          data_type: 3,
-          ocr_type: 8,
+      // ocr解析的时候存一份图片
+      const uploadFileRes = await uni.uploadFile({
+        url: BASE_API_HOST + "/sys/upload-images/item",
+        filePath: res.tempFilePaths[0],
+        header: {
+          Authorization: userStore.getToken,
         },
+        name: "file",
       })
-      uni.hideLoading()
-      if (invokeRes.errMsg.includes(":ok")) {
-        // items 数据结构
-        // box_confidence: 0.867062032
-        // confidence: 0.851171851
-        // language: "zh"
-        //  pos: {
-        // left_bottom: {x: -2.882821655, y: 140.15247345}
-        // left_top: {x: -5.908043432, y: 69.059946442}
-        // right_bottom: {x: 341.786631775, y: 125.485654449}
-        // right_top: {x: 338.761408997, y: 54.393123436}
-        // }
-        // text: ""
-        ocrResult.value = invokeRes.data.ocr_comm_res.items
+      try {
+        const fileData = JSON.parse(uploadFileRes.data)
+        if (uploadFileRes.statusCode !== 201) {
+          uni.showToast({
+            title: fileData.msg,
+            icon: "none",
+          })
+          return
+        }
+        currentUploadFileRes.value = fileData.data
+        await wxMarketOcr(res.tempFilePaths[0])
+        hideLoading()
+      } catch (error) {
+        console.log("JSON.parse error after uploadFile ", error)
+        hideLoading()
       }
+      return
     },
   })
+}
+
+const wxMarketOcr = async (filePath: string) => {
+  const invokeRes = await uni.serviceMarket.invokeService({
+    service: "wx79ac3de8be320b71", //固定的不要动
+    api: "OcrAllInOne", //固定的不要动
+    data: {
+      // 用 CDN 方法标记要上传并转换成 HTTP URL 的文件
+      img_url: new uni.serviceMarket.CDN({
+        type: "filePath",
+        filePath: filePath,
+      }),
+      data_type: 3,
+      ocr_type: 8,
+    },
+  })
+  uni.hideLoading()
+  if (invokeRes.errMsg.includes(":ok")) {
+    // items 数据结构
+    // box_confidence: 0.867062032
+    // confidence: 0.851171851
+    // language: "zh"
+    //  pos: {
+    // left_bottom: {x: -2.882821655, y: 140.15247345}
+    // left_top: {x: -5.908043432, y: 69.059946442}
+    // right_bottom: {x: 341.786631775, y: 125.485654449}
+    // right_top: {x: 338.761408997, y: 54.393123436}
+    // }
+    // text: ""
+    ocrResult.value = invokeRes.data.ocr_comm_res.items
+  }
 }
 
 /**
@@ -181,9 +210,8 @@ const onScaneCode = () => {
   uni.showLoading({ mask: true })
   uni.scanCode({
     success: (res: any) => {
-      console.log("res", res)
       if (res.errMsg.includes(":ok")) {
-        goodsInfo.goodsBarCode = res.result
+        goodsInfo.value.goodsBarCode = res.result
         getGoodInfoByCode()
       }
     },
@@ -194,7 +222,7 @@ const onScaneCode = () => {
 }
 
 const onItemClick = (item: any) => {
-  goodsInfo.goodsName += item.text
+  goodsInfo.value.goodsName += item.text
 }
 
 /**
@@ -203,19 +231,19 @@ const onItemClick = (item: any) => {
 const getGoodInfoByCode = async () => {
   try {
     uni.showLoading({ mask: true })
-    const { data } = await getCmsGoodInfo({ code: goodsInfo.goodsBarCode })
-    console.log("data", data)
+    const { data } = await getCmsGoodInfo({
+      goodsBarCode: goodsInfo.value.goodsBarCode,
+    })
     if (Object.keys(data).length > 0) {
       // 已有商品
-      goodsInfo = {
+      goodsInfo.value = {
         ...data,
-        // 默认数量
-        goodsNum: 1,
-      }
+        goodsImg: `${BASE_API_HOST}${data.goodsImg}`,
+      } as any
     }
     uni.hideLoading()
   } catch (error) {
-    console.log("error")
+    console.log("error", error)
   }
 }
 
@@ -223,10 +251,19 @@ const getGoodInfoByCode = async () => {
  * 入库
  */
 const onSave = async () => {
+  if (isNaN(+goodsNum.value)) {
+    uni.showToast({
+      title: "请输入正确的数量",
+      icon: "none",
+    })
+    return
+  }
   try {
     uni.showLoading({ mask: true })
     await addCmsGoodsToStore({
-      ...goodsInfo,
+      ...goodsInfo.value,
+      goodsImg: currentUploadFileRes.value.url,
+      goodsNum: +goodsNum.value,
       warehouseId: currentStoreId.value,
     })
     uni.showToast({
