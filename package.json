@@ -1,5 +1,5 @@
 {
-  "name": "mini-store-house",
+  "name": "cargo-tales",
   "version": "0.0.1",
   "scripts": {
     "dev:custom": "uni -p",
