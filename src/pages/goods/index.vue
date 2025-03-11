@@ -1,7 +1,7 @@
 <!--
  * @Author: ZhengJie
  * @Date: 2025-02-23 03:21:25
- * @LastEditTime: 2025-03-09 03:06:54
+ * @LastEditTime: 2025-03-12 00:34:20
  * @Description: 商品出入库
 -->
 <template>
@@ -241,6 +241,7 @@ const getGoodInfoByCode = async () => {
       // 已有商品
       goodsInfo.value = {
         ...data,
+        goodsId: data.id,
       } as any
     }
     uni.hideLoading()

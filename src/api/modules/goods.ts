@@ -1,7 +1,7 @@
 /*
  * @Author: ZhengJie
  * @Date: 2025-03-02 02:19:30
- * @LastEditTime: 2025-03-04 18:01:16
+ * @LastEditTime: 2025-03-12 00:22:22
  * @Description: 商品管理
  */
 import { request } from "../request"
@@ -38,8 +38,8 @@ const updateCmsGoodsStore = (params: any) => {
 /**
  * 获取列表
  */
-const getCmsGoodsList = (): Promise<any> => {
-  return request.get("/cms/goods/mini/list")
+const getCmsGoodsList = (params: any): Promise<any> => {
+  return request.get("/cms/goods/mini/list", params)
 }
 
 /**

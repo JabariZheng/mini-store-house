@@ -21,15 +21,15 @@
         >
           <div class="goods-item-img">
             <img
-              :src="(item.goodsImg && BASE_API_HOST + item.goodsImg) || ''"
+              :src="(item.goods.goodsImg && BASE_API_HOST + item.goods.goodsImg) || ''"
               mode="aspectFit"
               alt=""
             />
           </div>
           <div class="goods-item-info">
-            <div class="goods-item-info-title">{{ item.goodsName }}</div>
+            <div class="goods-item-info-title">{{ item.goods.goodsName }}</div>
             <div class="goods-item-info-num">
-              库存：{{ item.inventory.inventoryNumber }}
+              库存：{{ item.inventoryNumber }}
             </div>
             <div class="goods-item-info-date">
               更新时间：{{ item.updateDate }}
@@ -52,7 +52,7 @@
         <img
           mode="aspectFit"
           :src="
-            (currentGood.goodsImg && BASE_API_HOST + currentGood.goodsImg) || ''
+            (currentGood.goods.goodsImg && BASE_API_HOST + currentGood.goods.goodsImg) || ''
           "
           alt=""
         />
@@ -63,10 +63,10 @@
           <uni-easyinput
             v-if="isStocktaking"
             trim="all"
-            v-model="currentGood.goodsName"
+            v-model="currentGood.goods.goodsName"
             :styles="inputStyles"
           ></uni-easyinput>
-          <text v-else class="info-value">{{ currentGood.goodsName }}</text>
+          <text v-else class="info-value">{{ currentGood.goods.goodsName }}</text>
         </div>
         <div class="goods-item-info-item">
           <text class="info-label">条码：</text>
@@ -75,9 +75,9 @@
             trim="all"
             type="number"
             :styles="inputStyles"
-            v-model="currentGood.goodsBarCode"
+            v-model="currentGood.goods.goodsBarCode"
           ></uni-easyinput>
-          <text v-else class="info-value">{{ currentGood.goodsBarCode }}</text>
+          <text v-else class="info-value">{{ currentGood.goods.goodsBarCode }}</text>
         </div>
         <div class="goods-item-info-item">
           <text class="info-label">库存：</text>
@@ -86,21 +86,21 @@
             trim="all"
             type="number"
             :styles="inputStyles"
-            v-model="currentGood.inventory.inventoryNumber"
+            v-model="currentGood.inventoryNumber"
           ></uni-easyinput>
           <text v-else class="info-value">{{
-            currentGood.inventory.inventoryNumber
+            currentGood.inventoryNumber
           }}</text>
         </div>
         <template v-if="!isStocktaking">
           <div class="goods-item-info-item">
             <text class="info-label">创建时间：</text>
-            <text class="info-value">{{ currentGood.createDate }}</text>
+            <text class="info-value">{{ currentGood.goods.createDate }}</text>
           </div>
           <div class="goods-item-info-item">
             <text class="info-label">入库时间：</text>
             <text class="info-value">{{
-              currentGood.inventory.updateDate
+              currentGood.updateDate
             }}</text>
           </div>
         </template>
@@ -126,28 +126,30 @@ import { onLoad } from "@dcloudio/uni-app"
 import { BASE_API_HOST } from "@/api/fetch"
 import { hideLoading, showLoading } from "@/utils/loading"
 import { useUserStore } from "@/store/user"
+import type { IInventoryListItem } from "@/types/inventory"
 
 const DetailDialogRef = ref<any>({})
 
 const userStore = useUserStore()
 
+let currentStoreId = ref("")
 let searchValue = ref("")
 let goodsData = ref<IGoodsListItem[]>([])
 let isStocktaking = ref(false)
-let currentGood = reactive<IGoodsListItem>({
-  id: "",
-  goodsName: "",
-  goodsBarCode: "",
-  goodsImg: "",
-  status: "",
+let currentGood = reactive<IInventoryListItem>({
+  goodsId: "",
+  inventoryNumber: 0,
+  warehouseId: "",
   createBy: "",
   createDate: "",
   updateBy: "",
   updateDate: "",
-  inventory: {
-    goodsId: "",
-    inventoryNumber: 0,
-    warehouseId: "",
+  goods: {
+    id: "",
+    goodsName: "",
+    goodsBarCode: "",
+    goodsImg: "",
+    status: "",
     createBy: "",
     createDate: "",
     updateBy: "",
@@ -174,24 +176,23 @@ const inputStyles = {
 const listData = computed(() => {
   if (!searchValue.value) return goodsData.value
   return goodsData.value.filter((item) =>
-    item.goodsName.includes(searchValue.value)
+    item.goods.goodsName.includes(searchValue.value)
   )
 })
 
-onLoad(() => {
+onLoad((options) => {
+  const { storeId }: any = options
+  currentStoreId.value = storeId
   getList()
 })
 
 const getList = async () => {
   try {
     uni.showLoading({ mask: true })
-    const { data } = await getCmsGoodsList()
-    goodsData.value = data.list.map((item: IGoodsListItem) => {
-      // if (item.goodsImg) {
-      //   item.goodsImg = `${BASE_API_HOST}${item.goodsImg}`
-      // }
-      return item
+    const { data } = await getCmsGoodsList({
+      warehouseId: currentStoreId.value,
     })
+    goodsData.value = data.list
     uni.hideLoading()
   } catch (error) {
     console.log("error:", error)
@@ -274,15 +275,14 @@ const onChangeImg = () => {
           })
           return
         }
-        currentGood.goodsImg = fileData.data.url
-        console.log("currentGood.goodsImg", currentGood.goodsImg)
+        currentGood.goods.goodsImg = fileData.data.url
         // 直接更新商品
-        await updateCmsGoods({ ...currentGood, inventory: undefined })
+        await updateCmsGoods({ ...currentGood.goods })
         // 更新list中的值
         const getIndex = goodsData.value.findIndex(
-          (item) => item.id === currentGood.id
+          (item) => item.id === currentGood.goods.id
         )
-        goodsData.value[getIndex].goodsImg = currentGood.goodsImg
+        goodsData.value[getIndex].goodsImg = currentGood.goods.goodsImg
         hideLoading()
       } catch (error) {
         console.log("JSON.parse error after uploadFile ", error)
