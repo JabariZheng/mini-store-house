@@ -1,7 +1,7 @@
 <!--
  * @Author: ZhengJie
  * @Date: 2025-02-23 03:21:25
- * @LastEditTime: 2025-03-09 02:22:44
+ * @LastEditTime: 2025-03-09 03:06:54
  * @Description: 商品出入库
 -->
 <template>
@@ -17,7 +17,9 @@
         v-else
         class="goods-img-item"
         mode="aspectFit"
-        :src="goodsInfo.goodsImg"
+        :src="
+          (goodsInfo.goodsImg && `${BASE_API_HOST}${goodsInfo.goodsImg}`) || ''
+        "
         alt=""
       />
     </div>
@@ -136,7 +138,7 @@ const onChooseImg = () => {
   uni.chooseImage({
     count: 1,
     success: async (res) => {
-      goodsInfo.value.goodsImg = res.tempFilePaths[0]
+      // goodsInfo.value.goodsImg = res.tempFilePaths[0]
 
       ocrResult.value = []
       // uni.showLoading({ mask: true })
@@ -161,6 +163,7 @@ const onChooseImg = () => {
           return
         }
         currentUploadFileRes.value = fileData.data
+        goodsInfo.value.goodsImg = fileData.data.url
         await wxMarketOcr(res.tempFilePaths[0])
         hideLoading()
       } catch (error) {
@@ -238,7 +241,6 @@ const getGoodInfoByCode = async () => {
       // 已有商品
       goodsInfo.value = {
         ...data,
-        goodsImg: `${BASE_API_HOST}${data.goodsImg}`,
       } as any
     }
     uni.hideLoading()
