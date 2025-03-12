@@ -21,7 +21,10 @@
         >
           <div class="goods-item-img">
             <img
-              :src="(item.goods.goodsImg && BASE_API_HOST + item.goods.goodsImg) || ''"
+              :src="
+                (item.goods.goodsImg && BASE_API_HOST + item.goods.goodsImg) ||
+                ''
+              "
               mode="aspectFit"
               alt=""
             />
@@ -52,7 +55,9 @@
         <img
           mode="aspectFit"
           :src="
-            (currentGood.goods.goodsImg && BASE_API_HOST + currentGood.goods.goodsImg) || ''
+            (currentGood.goods.goodsImg &&
+              BASE_API_HOST + currentGood.goods.goodsImg) ||
+            ''
           "
           alt=""
         />
@@ -66,7 +71,9 @@
             v-model="currentGood.goods.goodsName"
             :styles="inputStyles"
           ></uni-easyinput>
-          <text v-else class="info-value">{{ currentGood.goods.goodsName }}</text>
+          <text v-else class="info-value">{{
+            currentGood.goods.goodsName
+          }}</text>
         </div>
         <div class="goods-item-info-item">
           <text class="info-label">条码：</text>
@@ -77,7 +84,9 @@
             :styles="inputStyles"
             v-model="currentGood.goods.goodsBarCode"
           ></uni-easyinput>
-          <text v-else class="info-value">{{ currentGood.goods.goodsBarCode }}</text>
+          <text v-else class="info-value">{{
+            currentGood.goods.goodsBarCode
+          }}</text>
         </div>
         <div class="goods-item-info-item">
           <text class="info-label">库存：</text>
@@ -99,9 +108,7 @@
           </div>
           <div class="goods-item-info-item">
             <text class="info-label">入库时间：</text>
-            <text class="info-value">{{
-              currentGood.updateDate
-            }}</text>
+            <text class="info-value">{{ currentGood.updateDate }}</text>
           </div>
         </template>
       </div>
@@ -237,7 +244,16 @@ const fabTrigger = async ({ index }: any) => {
             }, 1000)
             return
           }
-          currentGood = data
+          // 这边数据格式不一样
+          // list是inventory left join goods
+          // 详情是goods left join inventory
+          currentGood = {
+            ...data.inventory,
+            goods: {
+              ...data,
+              inventory: undefined,
+            },
+          }
           isStocktaking.value = true
           DetailDialogRef.value.open()
         },
