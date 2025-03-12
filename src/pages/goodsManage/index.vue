@@ -266,6 +266,7 @@ const onChangeImg = () => {
         // }
         currentGood.goodsImg = fileData.data.url
         // ocr
+        console.log('ocr img:', BASE_API_HOST + fileData.data.url);
         const { data: ocrResResult } = await getOcrResultByImgUrl({
           url: BASE_API_HOST + fileData.data.url,
         })
