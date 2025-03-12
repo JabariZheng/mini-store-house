@@ -68,6 +68,13 @@
 				"backgroundColor": "#FEF9EC"
 			}
 		},
+		{
+			"path": "pages/goodsManage/index",
+			"style": {
+				"navigationBarTitleText": "商品管理",
+				"backgroundColor": "#FEF9EC"
+			}
+		},
 	],
 	"globalStyle": {
 		"navigationBarTextStyle": "black",

@@ -1,7 +1,7 @@
 <!--
  * @Author: ZhengJie
  * @Date: 2025-02-23 03:21:25
- * @LastEditTime: 2025-03-12 00:34:20
+ * @LastEditTime: 2025-03-12 14:37:20
  * @Description: 商品出入库
 -->
 <template>
@@ -81,6 +81,7 @@
 <script lang="ts" setup>
 import { BASE_API_HOST } from "@/api/fetch"
 import { addCmsGoodsToStore, getCmsGoodInfo } from "@/api/modules/goods"
+import { getOcrResultByImgUrl } from "@/api/modules/uploadImg"
 import { useUserStore } from "@/store/user"
 import type { IGoodsListItem } from "@/types/goods"
 import { hideLoading, showLoading } from "@/utils/loading"
@@ -164,7 +165,25 @@ const onChooseImg = () => {
         }
         currentUploadFileRes.value = fileData.data
         goodsInfo.value.goodsImg = fileData.data.url
-        await wxMarketOcr(res.tempFilePaths[0])
+        const { data: ocrResResult } = await getOcrResultByImgUrl({
+          url: BASE_API_HOST + fileData.data.url,
+        })
+        if (ocrResResult.length === 0) {
+          uni.showToast({
+            title: "未识别到结果",
+            icon: "none",
+          })
+          return
+        }
+        // 微信的ocr识别（每日100次免费，超过收钱）
+        // await wxMarketOcr(res.tempFilePaths[0])
+        // 本地PaddleOCR服务，手动格式化数据格式做兼容
+        console.log("ocrResResult", ocrResResult)
+        ocrResult.value = ocrResResult.map((item: string) => {
+          return {
+            text: item,
+          }
+        })
         hideLoading()
       } catch (error) {
         console.log("JSON.parse error after uploadFile ", error)

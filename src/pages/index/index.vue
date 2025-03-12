@@ -1,7 +1,7 @@
 <!--
  * @Author: ZhengJie
  * @Date: 2024-11-29 20:28:52
- * @LastEditTime: 2025-03-05 03:50:14
+ * @LastEditTime: 2025-03-12 14:02:34
  * @Description: 首页
 -->
 <template>
@@ -186,6 +186,14 @@ const onToolClick = async (commondStr: string) => {
     })
     return
   }
+  if (!currentStore.value || Object.keys(currentStore.value || {}).length ===0) {
+    uni.showToast({
+      title: "请先创建仓库",
+      icon: "none",
+    })
+    return
+  }
+  
   switch (commondStr) {
     case "in":
       uni.navigateTo({
