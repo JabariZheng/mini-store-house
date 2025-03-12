@@ -55,6 +55,19 @@
         />
       </div>
       <div class="goods-item-info">
+        <div v-if="ocrResult.length > 0" class="goods-item-info-item">
+          <text class="info-label">识别结果：</text>
+          <div class="ocr-result">
+            <text
+              v-for="(item, index) in ocrResult"
+              :key="index"
+              class="ocr-result-item"
+              @click="onOcrItemClick(item)"
+            >
+              {{ item.text }}
+            </text>
+          </div>
+        </div>
         <div class="goods-item-info-item">
           <text class="info-label">名称：</text>
           <uni-easyinput
@@ -94,6 +107,7 @@ import {
   getCmsGoodInfo,
   updateCmsGoodsStore,
   updateCmsGoods,
+  addCmsGoods,
 } from "@/api/modules/goods"
 import type { IGoodsItem, IGoodsListItem } from "@/types/goods"
 import { onLoad } from "@dcloudio/uni-app"
@@ -102,11 +116,13 @@ import { hideLoading, showLoading } from "@/utils/loading"
 import { useUserStore } from "@/store/user"
 import type { IInventoryListItem } from "@/types/inventory"
 import Icon_Upload from "@/static/upload-icon.png"
+import { getOcrResultByImgUrl } from "@/api/modules/uploadImg"
 
 const DetailDialogRef = ref<any>({})
 
 const userStore = useUserStore()
 
+let ocrResult = ref([])
 let currentStoreId = ref("")
 let searchValue = ref("")
 let goodsData = ref<IGoodsListItem[]>([])
@@ -122,7 +138,6 @@ let currentGood = reactive<IGoodsItem>({
   updateBy: "",
   updateDate: "",
 })
-let showCurrentImg = ref(true)
 const fabContent = reactive([
   {
     iconPath: "/static/caigou-0D253F.png",
@@ -205,6 +220,12 @@ const fabTrigger = async ({ index }: any) => {
             DetailDialogRef.value.open()
           })
         },
+        fail(result) {
+          uni.showToast({
+            title: "请检查条形码",
+            icon: "none",
+          })
+        },
         complete: () => {
           uni.hideLoading()
         },
@@ -231,7 +252,6 @@ const onChangeImg = () => {
         name: "file",
       })
       try {
-        showCurrentImg.value = false
         const fileData = JSON.parse(uploadFileRes.data)
         if (uploadFileRes.statusCode !== 201) {
           uni.showToast({
@@ -240,13 +260,20 @@ const onChangeImg = () => {
           })
           return
         }
-        currentGood = {
-          ...currentGood,
-          goodsImg: fileData.data.url,
-        }
-        console.log("currentGood", currentGood)
-        await nextTick()
-        showCurrentImg.value = true
+        // currentGood = {
+        //   ...currentGood,
+        //   goodsImg: fileData.data.url,
+        // }
+        currentGood.goodsImg = fileData.data.url
+        // ocr
+        const { data: ocrResResult } = await getOcrResultByImgUrl({
+          url: BASE_API_HOST + fileData.data.url,
+        })
+        ocrResult.value = ocrResResult.map((item: string) => {
+          return {
+            text: item,
+          }
+        })
         // 直接更新商品
         if (currentGood.id) {
           await updateCmsGoods({ ...currentGood })
@@ -264,6 +291,13 @@ const onChangeImg = () => {
       return
     },
   })
+}
+
+const onOcrItemClick = (data: any) => {
+  if (!currentGood.goodsName) {
+    currentGood.goodsName = ""
+  }
+  currentGood.goodsName += data.text
 }
 
 const onSave = async () => {
@@ -284,13 +318,18 @@ const onSave = async () => {
   }
   try {
     uni.showLoading({ mask: true })
-    await updateCmsGoods({ ...currentGood })
+    if (currentGood.id) {
+      await updateCmsGoods({ ...currentGood })
+    } else {
+      await addCmsGoods({ ...currentGood })
+    }
     uni.showToast({
       title: "保存成功",
       icon: "none",
     })
     DetailDialogRef.value.close()
     goodsData.value = []
+    ocrResult.value = []
     setTimeout(() => {
       getList()
     }, 500)
@@ -388,10 +427,22 @@ page {
       padding: 5px 0;
       border-bottom: 1px solid rgba(70, 80, 83, 0.1);
       .info-label {
+        flex-shrink: 0;
         color: #696969;
       }
       .info-value {
         color: #0d253f;
+      }
+      .ocr-result {
+        display: flex;
+        flex-wrap: wrap;
+        &-item {
+          background-color: #d8d8d8;
+          padding: 0 5px;
+          border-radius: 10px;
+          margin-bottom: 5px;
+          margin-right: 5px;
+        }
       }
     }
 
