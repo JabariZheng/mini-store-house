@@ -1,14 +1,20 @@
 /*
  * @Author: ZhengJie
  * @Date: 2025-03-01 01:49:54
- * @LastEditTime: 2025-03-09 02:47:57
+ * @LastEditTime: 2025-03-12 18:03:30
  * @Description: 接口请求封装
  */
 import { useUserStore } from "@/store/user"
+import { CACHE_KEY_MAP } from "@/utils/cache-data"
 // import { CACHE_KEY_MAP } from "@/utils/cache-data"
 
-export const BASE_API_HOST = import.meta.env.VITE_API_HOST
-export const BASE_API_URL = import.meta.env.VITE_API_PREFIX_URL
+const getFetchStorage = uni.getStorageSync(CACHE_KEY_MAP.FETCH_HOST)
+console.log("getFetchStorage", getFetchStorage)
+
+// export const BASE_API_HOST = import.meta.env.VITE_API_HOST
+// export const BASE_API_URL = import.meta.env.VITE_API_PREFIX_URL
+export const BASE_API_HOST = getFetchStorage.api_host
+export const BASE_API_URL = getFetchStorage.api_prefix_url
 const SUCCESS_CODE = 200
 
 export default (options: any, loading: boolean = true) => {

@@ -1,13 +1,13 @@
 <!--
  * @Author: ZhengJie
  * @Date: 2025-02-19 02:03:27
- * @LastEditTime: 2025-03-08 01:17:07
+ * @LastEditTime: 2025-03-12 18:18:05
  * @Description: 我的
 -->
 <template>
   <div class="my-page">
     <PageHeader ref="PageHeaderRef" />
-    <UserMenu v-if="hasUserInfo" @logout="onLogout" />
+    <UserMenu @logout="onLogout" />
     <!-- <div class="logout-btn">
       <button>退出登录</button>
     </div> -->
